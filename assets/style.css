@@ -1,84 +1,71 @@
 /* ===============================
-   Daily Trading Journal Styling
+   Daily PnL Calendar Styling
    =============================== */
 
-/* Background & Font */
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f8f9fa;
-    color: #333;
+/* Container Kalender */
+.pnl-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* 7 hari per minggu */
+    gap: 10px;
+    margin-top: 20px;
 }
 
-/* Header */
-h1, h2 {
-    font-weight: 700;
-    letter-spacing: 1px;
-    color: #2c3e50;
-}
-
-/* Card Custom Shadow */
-.card {
-    border-radius: 12px;
-    border: none;
-    box-shadow: 0px 4px 10px rgba(0,0,0,0.08);
-}
-
-/* Balance / Summary Cards */
-.card .card-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-.card .card-text {
-    font-size: 1.4rem;
-    font-weight: bold;
-}
-
-/* Table Styling */
-.table {
+/* Kotak Hari */
+.pnl-day {
+    background: #ffffff;
     border-radius: 10px;
-    overflow: hidden;
-}
-.table thead th {
-    text-align: center;
-    background: #2c3e50 !important;
-    color: white !important;
-}
-.table tbody td {
-    vertical-align: middle;
-    text-align: center;
-}
-
-/* Buttons */
-.btn {
-    border-radius: 8px;
-    font-weight: 500;
-    transition: 0.2s ease-in-out;
-}
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0px 4px 8px rgba(0,0,0,0.15);
-}
-
-/* Alert Custom */
-.alert {
-    border-radius: 8px;
-}
-
-/* Form */
-.form-label {
-    font-weight: 600;
-}
-.form-control, .form-select {
-    border-radius: 8px;
-    border: 1px solid #ccc;
+    border: 1px solid #e0e0e0;
     padding: 10px;
-}
-
-/* Footer (optional) */
-.footer {
-    margin-top: 40px;
-    padding: 15px;
+    min-height: 80px;
     text-align: center;
     font-size: 0.9rem;
+    box-shadow: 0px 3px 6px rgba(0,0,0,0.05);
+    transition: 0.2s ease-in-out;
+    position: relative;
+}
+
+/* Hover efek */
+.pnl-day:hover {
+    transform: scale(1.03);
+    box-shadow: 0px 6px 12px rgba(0,0,0,0.1);
+}
+
+/* Tanggal di pojok atas */
+.pnl-day .date {
+    font-size: 0.75rem;
+    font-weight: 600;
     color: #777;
+    position: absolute;
+    top: 5px;
+    right: 8px;
+}
+
+/* Nilai PnL */
+.pnl-day .pnl {
+    margin-top: 15px;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+/* Warna berdasarkan hasil */
+.pnl-day.win {
+    border-left: 5px solid #28a745; /* hijau */
+}
+.pnl-day.lose {
+    border-left: 5px solid #dc3545; /* merah */
+}
+.pnl-day.neutral {
+    border-left: 5px solid #6c757d; /* abu2 */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .pnl-calendar {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+@media (max-width: 480px) {
+    .pnl-calendar {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
