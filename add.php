@@ -12,16 +12,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $amount_usd = $_POST['amount_usd'];
     $trade_date = $_POST['trade_date'];
 
+    // Hitung pnl_usd
+    $pnl_usd = ($result == "win") ? $amount_usd : -$amount_usd;
+
     // Simpan ke tabel trades
-    $sql = "INSERT INTO trades (pair_id, position, result, amount_usd, trade_date) 
-            VALUES ('$pair_id', '$position', '$result', '$amount_usd', '$trade_date')";
+    $sql = "INSERT INTO trades (pair_id, position, result, amount_usd, pnl_usd, trade_date) 
+            VALUES ('$pair_id', '$position', '$result', '$amount_usd', '$pnl_usd', '$trade_date')";
     if ($conn->query($sql) === TRUE) {
-        // Update balance
-        if ($result == "win") {
-            $conn->query("UPDATE balance SET total_balance = total_balance + $amount_usd WHERE id=1");
-        } else {
-            $conn->query("UPDATE balance SET total_balance = total_balance - $amount_usd WHERE id=1");
-        }
+        // Update balance sesuai pnl
+        $conn->query("UPDATE balance SET total_balance = total_balance + $pnl_usd WHERE id=1");
 
         header("Location: index.php?msg=Trade added successfully");
         exit();
