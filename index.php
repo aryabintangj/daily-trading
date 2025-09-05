@@ -65,12 +65,6 @@ while ($row = $pnl_result->fetch_assoc()) {
     <title>Daily Trading Journal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .pnl-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr); /* 7 hari per baris */
-            gap: 10px;
-            margin-top: 20px;
-        }
         .pnl-box {
             padding: 12px;
             border-radius: 10px;
@@ -145,23 +139,69 @@ while ($row = $pnl_result->fetch_assoc()) {
         </div>
     </div>
 
-    <!-- Daily PnL Grid -->
+    <!-- Daily PnL Calendar -->
     <div class="card shadow mb-4">
         <div class="card-header">
             <h5 class="mb-0">📅 Daily PnL - <?= date('F Y', strtotime($selected_month.'-01')) ?></h5>
         </div>
         <div class="card-body">
-            <div class="pnl-grid">
-            <?php
-            $days_in_month = date('t', strtotime($selected_month.'-01')); // jumlah hari di bulan terpilih
+            <div class="table-responsive">
+                <table class="table table-bordered text-center align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Minggu</th>
+                            <th>Senin</th>
+                            <th>Selasa</th>
+                            <th>Rabu</th>
+                            <th>Kamis</th>
+                            <th>Jumat</th>
+                            <th>Sabtu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php
+                    $days_in_month = date('t', strtotime($selected_month.'-01'));
+                    $first_day_week = date('w', strtotime($selected_month.'-01')); // 0=Sun,6=Sat
+                    $row = [];
 
-            for ($d = 1; $d <= $days_in_month; $d++) {
-                $date = sprintf("%s-%02d", $selected_month, $d);
-                $pnl = isset($daily_pnl[$date]) ? $daily_pnl[$date] : 0;
-                $class = $pnl > 0 ? "pnl-positive" : ($pnl < 0 ? "pnl-negative" : "pnl-neutral");
-                echo "<div class='pnl-box $class'>$d<br>\$" . number_format($pnl, 2) . "</div>";
-            }
-            ?>
+                    // isi kosong sebelum tanggal 1
+                    for ($i=0; $i<$first_day_week; $i++) {
+                        $row[] = "";
+                    }
+
+                    for ($d=1; $d <= $days_in_month; $d++) {
+                        $date = sprintf("%s-%02d", $selected_month, $d);
+                        $pnl = isset($daily_pnl[$date]) ? $daily_pnl[$date] : 0;
+                        $class = $pnl > 0 ? "pnl-positive" : ($pnl < 0 ? "pnl-negative" : "pnl-neutral");
+                        $box = "<div class='pnl-box $class'>$d<br>$" . number_format($pnl, 2) . "</div>";
+
+                        $row[] = $box;
+
+                        // kalau sudah Sabtu atau akhir bulan → tampilkan baris
+                        if (count($row) == 7) {
+                            echo "<tr>";
+                            foreach ($row as $cell) {
+                                echo "<td>$cell</td>";
+                            }
+                            echo "</tr>";
+                            $row = [];
+                        }
+                    }
+
+                    // isi sisa kosong setelah akhir bulan
+                    if (count($row) > 0) {
+                        while (count($row) < 7) {
+                            $row[] = "";
+                        }
+                        echo "<tr>";
+                        foreach ($row as $cell) {
+                            echo "<td>$cell</td>";
+                        }
+                        echo "</tr>";
+                    }
+                    ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
