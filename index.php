@@ -22,7 +22,7 @@ $result = $conn->query($sql);
 // Ambil saldo
 // ==========================
 $balance_query = $conn->query("SELECT total_balance FROM balance LIMIT 1");
-$balance = $balance_query->fetch_assoc()['total_balance'];
+$balance = $balance_query->fetch_assoc()['total_balance'] ?? 0;
 
 // ==========================
 // Hitung total win/lose bulan ini
@@ -57,6 +57,36 @@ $daily_pnl = [];
 while ($row = $pnl_result->fetch_assoc()) {
     $daily_pnl[$row['trade_date']] = $row['daily_pnl'];
 }
+
+// ==========================
+// Challenge progress (otomatis naik level)
+// ==========================
+$base_challenge = 1500;
+$growth_rate = 0.25;
+$total_challenges = 22;
+
+$challenges = [];
+for ($i = 1; $i <= $total_challenges; $i++) {
+    $challenges[$i] = $base_challenge * pow(1 + $growth_rate, $i - 1);
+}
+
+$current_challenge = 1;
+foreach ($challenges as $id => $target) {
+    if ($balance >= $target) {
+        $current_challenge = $id + 1;
+    } else {
+        $current_challenge = $id;
+        break;
+    }
+}
+if ($current_challenge > $total_challenges) {
+    $current_challenge = $total_challenges;
+}
+
+$target_balance = $challenges[$current_challenge];
+$previous_target = $current_challenge > 1 ? $challenges[$current_challenge - 1] : 0;
+$progress = ($balance - $previous_target) / ($target_balance - $previous_target) * 100;
+$progress = max(0, min(100, $progress));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -64,7 +94,9 @@ while ($row = $pnl_result->fetch_assoc()) {
     <meta charset="UTF-8">
     <title>Daily Trading Journal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        body { background: #f8f9fa; }
         .pnl-box {
             padding: 12px;
             border-radius: 10px;
@@ -73,12 +105,23 @@ while ($row = $pnl_result->fetch_assoc()) {
             color: white;
             min-height: 70px;
         }
-        .pnl-positive { background-color: #28a745; } /* hijau */
-        .pnl-negative { background-color: #dc3545; } /* merah */
-        .pnl-neutral  { background-color: #6c757d; } /* abu-abu */
+        .pnl-positive { background-color: #28a745; }
+        .pnl-negative { background-color: #dc3545; }
+        .pnl-neutral  { background-color: #6c757d; }
+
+        /* Challenge Card */
+        .challenge-card.completed { border-left: 6px solid #28a745; }
+        .challenge-card.progressing { border-left: 6px solid #ffc107; }
+        .challenge-progress .progress-bar { transition: width 1s ease-in-out; }
+
+        /* Table hover */
+        table.table-hover tbody tr:hover {
+            background-color: #f1f5ff;
+            cursor: pointer;
+        }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
 <div class="container mt-4">
     <h1 class="text-center mb-4">📈 Daily Trading Journal</h1>
@@ -116,7 +159,7 @@ while ($row = $pnl_result->fetch_assoc()) {
         <div class="col-md-4">
             <div class="card text-white bg-primary shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Balance</h5>
+                    <h5 class="card-title">💰 Balance</h5>
                     <p class="card-text fs-4">$<?= number_format($balance, 2) ?></p>
                 </div>
             </div>
@@ -124,7 +167,7 @@ while ($row = $pnl_result->fetch_assoc()) {
         <div class="col-md-4">
             <div class="card text-white bg-success shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Total Win (<?= date('F Y', strtotime($selected_month.'-01')) ?>)</h5>
+                    <h5 class="card-title">✅ Total Win (<?= date('F Y', strtotime($selected_month.'-01')) ?>)</h5>
                     <p class="card-text fs-4">$<?= number_format($win_total, 2) ?></p>
                 </div>
             </div>
@@ -132,10 +175,39 @@ while ($row = $pnl_result->fetch_assoc()) {
         <div class="col-md-4">
             <div class="card text-white bg-danger shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Total Lose (<?= date('F Y', strtotime($selected_month.'-01')) ?>)</h5>
+                    <h5 class="card-title">❌ Total Lose (<?= date('F Y', strtotime($selected_month.'-01')) ?>)</h5>
                     <p class="card-text fs-4">$<?= number_format($lose_total, 2) ?></p>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Challenge Card -->
+    <div class="card shadow mb-4 challenge-card <?= $progress >= 100 ? 'completed' : 'progressing' ?>">
+        <div class="card-header">
+            <h5 class="mb-0">🏆 Challenge <?= $current_challenge ?>: Target Balance $<?= number_format($target_balance, 2) ?></h5>
+        </div>
+        <div class="card-body">
+            <p>Current Balance: <strong>$<?= number_format($balance, 2) ?></strong></p>
+            <div class="progress challenge-progress mb-2">
+                <div class="progress-bar bg-success" role="progressbar" 
+                     style="width: <?= $progress ?>%;">
+                     <?= round($progress, 1) ?>%
+                </div>
+            </div>
+            <p class="challenge-status <?= $progress >= 100 ? 'text-success' : 'text-warning' ?>">
+                <?= $progress >= 100 ? 'Completed ✅' : 'Progressing...' ?>
+            </p>
+        </div>
+    </div>
+
+    <!-- Daily PnL Line Chart -->
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">📊 Daily PnL Chart</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="pnlChart" height="100"></canvas>
         </div>
     </div>
 
@@ -171,13 +243,20 @@ while ($row = $pnl_result->fetch_assoc()) {
 
                     for ($d=1; $d <= $days_in_month; $d++) {
                         $date = sprintf("%s-%02d", $selected_month, $d);
-                        $pnl = isset($daily_pnl[$date]) ? $daily_pnl[$date] : 0;
-                        $class = $pnl > 0 ? "pnl-positive" : ($pnl < 0 ? "pnl-negative" : "pnl-neutral");
-                        $box = "<div class='pnl-box $class'>$d<br>$" . number_format($pnl, 2) . "</div>";
 
+                        if (!array_key_exists($date, $daily_pnl)) {
+                            $pnl = null;
+                            $class = "pnl-neutral";
+                        } else {
+                            $pnl = $daily_pnl[$date];
+                            if ($pnl > 0) $class = "pnl-positive";
+                            elseif ($pnl < 0) $class = "pnl-negative";
+                            else $class = "pnl-neutral";
+                        }
+
+                        $box = "<div class='pnl-box $class'>$d<br>" . ($pnl !== null ? "$" . number_format($pnl, 2) : "-") . "</div>";
                         $row[] = $box;
 
-                        // kalau sudah Sabtu atau akhir bulan → tampilkan baris
                         if (count($row) == 7) {
                             echo "<tr>";
                             foreach ($row as $cell) {
@@ -188,7 +267,6 @@ while ($row = $pnl_result->fetch_assoc()) {
                         }
                     }
 
-                    // isi sisa kosong setelah akhir bulan
                     if (count($row) > 0) {
                         while (count($row) < 7) {
                             $row[] = "";
@@ -209,7 +287,7 @@ while ($row = $pnl_result->fetch_assoc()) {
     <!-- Table Trading Journal -->
     <div class="card shadow">
         <div class="card-header d-flex justify-content-between">
-            <h5 class="mb-0">Trading History (<?= date('F Y', strtotime($selected_month.'-01')) ?>)</h5>
+            <h5 class="mb-0">📝 Trading History (<?= date('F Y', strtotime($selected_month.'-01')) ?>)</h5>
             <a href="add.php" class="btn btn-primary btn-sm">+ Add Trade</a>
         </div>
         <div class="card-body">
@@ -261,6 +339,36 @@ while ($row = $pnl_result->fetch_assoc()) {
         </div>
     </div>
 </div>
+
+<!-- Script Chart.js -->
+<script>
+    const ctx = document.getElementById('pnlChart').getContext('2d');
+    const pnlChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: <?= json_encode(array_keys($daily_pnl)) ?>,
+            datasets: [{
+                label: 'Daily PnL',
+                data: <?= json_encode(array_values($daily_pnl)) ?>,
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                tension: 0.3,
+                fill: true,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: true }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+</script>
 
 </body>
 </html>

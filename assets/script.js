@@ -1,28 +1,36 @@
-// Tampilkan notifikasi dari parameter URL (?msg=...)
+// ===============================
+// Challenge Progress Animation
+// ===============================
 document.addEventListener("DOMContentLoaded", function () {
-    const urlParams = new URLSearchParams(window.location.search);
-    const msg = urlParams.get("msg");
+    const progressBars = document.querySelectorAll(".challenge-progress .progress-bar");
 
-    if (msg) {
-        let alertBox = document.createElement("div");
-        alertBox.className = "alert alert-info alert-dismissible fade show mt-2";
-        alertBox.innerHTML = `
-            <strong>Info:</strong> ${msg}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        document.querySelector(".container").prepend(alertBox);
+    progressBars.forEach(bar => {
+        let target = parseInt(bar.getAttribute("data-progress")) || 0; // Ambil nilai progress dari atribut
+        let width = 0;
 
-        // Auto close setelah 4 detik
-        setTimeout(() => {
-            let alert = bootstrap.Alert.getOrCreateInstance(alertBox);
-            alert.close();
-        }, 4000);
-    }
+        let interval = setInterval(() => {
+            if (width >= target) {
+                clearInterval(interval);
+            } else {
+                width++;
+                bar.style.width = width + "%";
+                bar.textContent = width + "%";
+            }
+        }, 15); // kecepatan animasi
+    });
 });
 
-// Konfirmasi hapus
-function confirmDelete(url) {
-    if (confirm("Yakin mau hapus trade ini?")) {
-        window.location.href = url;
+// ===============================
+// Tandai Challenge Selesai
+// ===============================
+function markChallengeComplete(id) {
+    const challengeCard = document.querySelector(`#challenge-${id}`);
+    if (challengeCard) {
+        let status = challengeCard.querySelector(".challenge-status");
+        if (status) {
+            status.textContent = "✅ Completed";
+            status.classList.remove("progressing");
+            status.classList.add("success");
+        }
     }
 }
